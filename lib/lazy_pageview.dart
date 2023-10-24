@@ -18,6 +18,11 @@ class LazyPageView<T> extends StatefulWidget {
     required this.loadNext,
     required this.pageBuilder,
     this.placeholder = const Center(child: CircularProgressIndicator()),
+    this.onPageChanged,
+    this.onLeftEndReached,
+    this.onRightEndReached,
+    this.onLeftEndUnreached,
+    this.onRightEndUnreached,
   });
 
   final Future<T?> Function() loadInitial;
@@ -25,6 +30,12 @@ class LazyPageView<T> extends StatefulWidget {
   final Future<T?> Function(T current) loadNext;
   final Widget Function(BuildContext context, T data) pageBuilder;
   final Widget placeholder;
+
+  final void Function(T data)? onPageChanged;
+  final void Function(T data)? onLeftEndReached;
+  final void Function(T data)? onRightEndReached;
+  final void Function(T data)? onLeftEndUnreached;
+  final void Function(T data)? onRightEndUnreached;
 
   @override
   State<LazyPageView> createState() => _LazyPageViewState<T>();
@@ -51,28 +62,40 @@ class _LazyPageViewState<T> extends State<LazyPageView> {
   Future<T?> loadInitially() async {
     T? data = await widget.loadInitial();
     currentPageData = Completion(Future.value(data));
-    previousPageData = Completion(loadPrevious());
-    nextPageData = Completion(loadNext());
+    previousPageData = Completion(loadPrevious(true));
+    nextPageData = Completion(loadNext(true));
     if (mounted) setState(() {});
     return data;
   }
 
-  Future<T?> loadNext() async {
+  Future<T?> loadNext([bool initial = false]) async {
     T? data = await widget.loadNext(currentPageData.get());
     if (data == null) {
       rightEndReached = true;
+      if (widget.onRightEndReached != null && currentPageData.isLoaded) {
+        widget.onRightEndReached!(currentPageData.get());
+      }
     } else {
       rightEndReached = false;
+      if (widget.onRightEndUnreached != null && !initial && currentPageData.isLoaded) {
+        widget.onRightEndUnreached!(currentPageData.get());
+      }
     }
     return data;
   }
 
-  Future<T?> loadPrevious() async {
+  Future<T?> loadPrevious([bool initial = false]) async {
     T? data = await widget.loadPrevious(currentPageData.get());
     if (data == null) {
       leftEndReached = true;
+      if (widget.onLeftEndReached != null && currentPageData.isLoaded) {
+        widget.onLeftEndReached!(currentPageData.get());
+      }
     } else {
       leftEndReached = false;
+      if (widget.onLeftEndUnreached != null && !initial && currentPageData.isLoaded) {
+        widget.onLeftEndUnreached!(currentPageData.get());
+      }
     }
     return data;
   }
@@ -113,6 +136,10 @@ class _LazyPageViewState<T> extends State<LazyPageView> {
                     previousPageData = currentPageData;
                     currentPageData = nextPageData;
                     nextPageData = Completion(loadNext());
+
+                    if (widget.onPageChanged != null && currentPageData.isLoaded) {
+                      widget.onPageChanged!(currentPageData.get());
+                    }
                   } else {
                     lastPage = page - 1;
                   }
@@ -129,6 +156,10 @@ class _LazyPageViewState<T> extends State<LazyPageView> {
                     nextPageData = currentPageData;
                     currentPageData = previousPageData;
                     previousPageData = Completion(loadPrevious());
+
+                    if (widget.onPageChanged != null && currentPageData.isLoaded) {
+                      widget.onPageChanged!(currentPageData.get());
+                    }
                   } else {
                     lastPage = page + 1;
                   }
