@@ -1,7 +1,7 @@
-library lazy_pageview;
+library lazy_page_view;
 
 import 'package:flutter/material.dart';
-import 'package:lazy_pageview/lazy_pageview_controller.dart';
+import 'package:lazy_page_view/lazy_page_controller.dart';
 
 import 'completion.dart';
 
@@ -33,7 +33,7 @@ class LazyPageView<T> extends StatefulWidget {
   final Widget Function(BuildContext context, T data) pageBuilder;
   final Widget placeholder;
 
-  final LazyPageViewController<T>? controller;
+  final LazyPageController<T>? controller;
 
   final void Function(T data)? onPageChanged;
   final void Function(T data)? onLeftEndReached;
@@ -42,14 +42,14 @@ class LazyPageView<T> extends StatefulWidget {
   final void Function(T data)? onRightEndUnreached;
 
   @override
-  State<LazyPageView> createState() => _LazyPageViewState<T>();
+  State<LazyPageView<T>> createState() => _LazyPageViewState<T>();
 }
 
-class _LazyPageViewState<T> extends State<LazyPageView> {
+class _LazyPageViewState<T> extends State<LazyPageView<T>> {
   PageController pageController = PageController(keepPage: false, initialPage: 10000);
   double lastX = 0;
 
-  late LazyPageViewController controller;
+  late LazyPageController controller;
 
   @override
   void dispose() {
@@ -66,7 +66,7 @@ class _LazyPageViewState<T> extends State<LazyPageView> {
     if (widget.controller != null) {
       controller = widget.controller!;
     } else {
-      controller = LazyPageViewController<T>();
+      controller = LazyPageController<T>();
     }
 
     controller.currentPageData = Completion<T?>(loadInitially());
@@ -74,15 +74,23 @@ class _LazyPageViewState<T> extends State<LazyPageView> {
 
   Future<T?> loadInitially() async {
     T? data = await widget.loadInitial();
-    controller.currentPageData = Completion<T?>(Future.value(data));
-    controller.previousPageData = Completion<T?>(loadPrevious(true));
-    controller.nextPageData = Completion<T?>(loadNext(true));
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      if (mounted) {
+        controller.previousPageData = Completion<T?>(loadPrevious(true));
+        controller.nextPageData = Completion<T?>(loadNext(true));
+        if (mounted) setState(() {});
+      }
+    });
     if (mounted) setState(() {});
     return data;
   }
 
   Future<T?> loadNext([bool initial = false]) async {
-    T? data = await widget.loadNext(controller.currentPageData.get());
+    T? a = controller.currentPageData.get();
+    print('from id next: ${(a as dynamic)?.id}');
+    Future<T?> b = widget.loadNext(a as T);
+    T? data = await b;
+    print('to id next: ${(data as dynamic)?.id}');
     if (data == null) {
       controller.rightEndReached = true;
       if (widget.onRightEndReached != null && controller.currentPageData.isLoaded) {
@@ -98,7 +106,11 @@ class _LazyPageViewState<T> extends State<LazyPageView> {
   }
 
   Future<T?> loadPrevious([bool initial = false]) async {
-    T? data = await widget.loadPrevious(controller.currentPageData.get());
+    T? a = controller.currentPageData.get();
+    print('from id previous: ${(a as dynamic)?.id}');
+    Future<T?> b = widget.loadPrevious(a as T);
+    T? data = await b;
+    print('to id previous: ${(data as dynamic)?.id}');
     if (data == null) {
       controller.leftEndReached = true;
       if (widget.onLeftEndReached != null && controller.currentPageData.isLoaded) {
@@ -139,7 +151,7 @@ class _LazyPageViewState<T> extends State<LazyPageView> {
                   controller.leftEndReached = false;
 
                   if (!controller.rightEndReached) {
-                    controller.next(loadNext());
+                    controller.next(loadNext);
 
                     if (widget.onPageChanged != null && controller.currentPageData.isLoaded) {
                       widget.onPageChanged!(controller.currentPageData.get());
@@ -157,7 +169,7 @@ class _LazyPageViewState<T> extends State<LazyPageView> {
                   controller.rightEndReached = false;
 
                   if (!controller.leftEndReached) {
-                    controller.previous(loadPrevious());
+                    controller.previous(loadPrevious);
 
                     if (widget.onPageChanged != null && controller.currentPageData.isLoaded) {
                       widget.onPageChanged!(controller.currentPageData.get());

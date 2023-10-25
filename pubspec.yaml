@@ -1,6 +1,6 @@
-name: lazy_pageview
+name: lazy_page_view
 description: A flutter package to create efficient, lazy loaded, dynamically sized PageViews.
-version: 0.1.1
+version: 1.0.0
 homepage:
 
 environment:

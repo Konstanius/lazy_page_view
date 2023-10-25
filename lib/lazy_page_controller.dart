@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'package:lazy_pageview/completion.dart';
+import 'package:lazy_page_view/completion.dart';
 
-class LazyPageViewController<T> extends ChangeNotifier {
+class LazyPageController<T> extends ChangeNotifier {
   static const int initialPage = 10000;
 
   late Completion<T?> currentPageData;
@@ -16,18 +16,18 @@ class LazyPageViewController<T> extends ChangeNotifier {
     return pageViewIndex - initialPage;
   }
 
-  void next(Future<T?> future) {
+  void next(Future<T?> Function() future) {
     previousPageData = currentPageData;
     currentPageData = nextPageData;
-    nextPageData = Completion<T?>(future);
+    nextPageData = Completion<T?>(future());
 
     notifyListeners();
   }
 
-  void previous(Future<T?> future) {
+  void previous(Future<T?> Function() future) {
     nextPageData = currentPageData;
     currentPageData = previousPageData;
-    previousPageData = Completion<T?>(future);
+    previousPageData = Completion<T?>(future());
 
     notifyListeners();
   }

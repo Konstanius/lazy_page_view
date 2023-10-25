@@ -20,16 +20,18 @@ class Completion<T> {
       this.error = e;
       this.stackTrace = s;
       state = CompletionState.error;
+
+      throw e;
     });
   }
 
-  T get() {
+  T? get() {
     if (state == CompletionState.loading) {
       throw Exception('Cannot get value of a loading completion');
     } else if (state == CompletionState.error) {
       throw Exception('Cannot get value of a errored completion');
     }
-    return value!;
+    return value;
   }
 
   bool get isLoaded => state == CompletionState.loaded;
