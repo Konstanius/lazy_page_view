@@ -6,7 +6,7 @@ enum CompletionState {
 }
 
 class Completion<T> {
-  Future<T> future;
+  Future<T?> future;
   CompletionState state = CompletionState.loading;
   T? value;
   dynamic error;

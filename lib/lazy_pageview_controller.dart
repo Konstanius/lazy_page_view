@@ -19,7 +19,7 @@ class LazyPageViewController<T> extends ChangeNotifier {
   void next(Future<T?> future) {
     previousPageData = currentPageData;
     currentPageData = nextPageData;
-    nextPageData = Completion(future);
+    nextPageData = Completion<T?>(future);
 
     notifyListeners();
   }
@@ -27,7 +27,7 @@ class LazyPageViewController<T> extends ChangeNotifier {
   void previous(Future<T?> future) {
     nextPageData = currentPageData;
     currentPageData = previousPageData;
-    previousPageData = Completion(future);
+    previousPageData = Completion<T?>(future);
 
     notifyListeners();
   }

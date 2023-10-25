@@ -69,14 +69,14 @@ class _LazyPageViewState<T> extends State<LazyPageView> {
       controller = LazyPageViewController<T>();
     }
 
-    controller.currentPageData = Completion(loadInitially());
+    controller.currentPageData = Completion<T?>(loadInitially());
   }
 
   Future<T?> loadInitially() async {
     T? data = await widget.loadInitial();
-    controller.currentPageData = Completion(Future.value(data));
-    controller.previousPageData = Completion(loadPrevious(true));
-    controller.nextPageData = Completion(loadNext(true));
+    controller.currentPageData = Completion<T?>(Future.value(data));
+    controller.previousPageData = Completion<T?>(loadPrevious(true));
+    controller.nextPageData = Completion<T?>(loadNext(true));
     if (mounted) setState(() {});
     return data;
   }
