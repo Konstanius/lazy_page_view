@@ -30,9 +30,11 @@ Using the exposed members of the controller, pages can also be loaded / reloaded
 ## Usage
 
 ```dart
+import 'package:flutter/material.dart';
 import 'package:lazy_page_view/completion.dart';
 import 'package:lazy_page_view/lazy_page_controller.dart';
 import 'package:lazy_page_view/lazy_page_view.dart';
+
 import 'database_service.dart';
 import 'event.dart';
 
@@ -51,25 +53,31 @@ class _ExampleLazyPageViewImplementationState extends State<ExampleLazyPageViewI
     return await DatabaseService.getNextEvent(currentEvent);
   }
   
-    Future<Event?> getPreviousDatabaseEvent(Event currentEvent) async {
-        // Load the previous event or null if there are no more events from the database, based on the current event
-        return await DatabaseService.getPreviousEvent(currentEvent);
-    }
+  Future<Event?> getPreviousDatabaseEvent(Event currentEvent) async {
+      // Load the previous event or null if there are no more events from the database, based on the current event
+      return await DatabaseService.getPreviousEvent(currentEvent);
+  }
+  
+  Future<Event> loadInitialEvent() async {
+    // Load the initial event from the database (for example, the next event to occur in the future)
+    return await DatabaseService.getInitialEvent();
+  }
   
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: LazyPageView(
-        lazyPageController: _lazyPageController,
-        initialPage: 0,
-        nextPageLoader: getNextDatabaseEvent,
-        previousPageLoader: getPreviousDatabaseEvent,
+        controller: _lazyPageController,
+        loadInitial: loadInitialEvent,
+        loadNext: getNextDatabaseEvent,
+        loadPrevious: getPreviousDatabaseEvent, 
         pageBuilder: (BuildContext context, Event event) {
-          return EventPage(event: event);
+          return EventPage(event);
         },
-        loadingWidget: Center(
-          child: CircularProgressIndicator(),
-        ),
+        placeHolder: const Center(child: CircularProgressIndicator()),
+        onPageChanged: (Event event) {
+          print('Page changed to: $event');
+        }
       ),
     );
   }
