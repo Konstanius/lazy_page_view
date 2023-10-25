@@ -54,6 +54,9 @@ class _LazyPageViewState<T> extends State<LazyPageView> {
   @override
   void dispose() {
     pageController.dispose();
+    if (widget.controller == null) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
