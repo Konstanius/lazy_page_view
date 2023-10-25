@@ -63,13 +63,13 @@ class _LazyPageViewState<T> extends State<LazyPageView> {
   @override
   void initState() {
     super.initState();
-    controller.currentPageData = Completion(loadInitially());
-
     if (widget.controller != null) {
       controller = widget.controller!;
     } else {
       controller = LazyPageViewController<T>();
     }
+
+    controller.currentPageData = Completion(loadInitially());
   }
 
   Future<T?> loadInitially() async {
