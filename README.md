@@ -46,7 +46,7 @@ class ExampleLazyPageViewImplementation extends StatefulWidget {
 }
 
 class _ExampleLazyPageViewImplementationState extends State<ExampleLazyPageViewImplementation> {
-  LazyPageController _lazyPageController = LazyPageController();
+  LazyPageController<Event> _lazyPageController = LazyPageController<Event>();
   
   Future<Event?> getNextDatabaseEvent(Event currentEvent) async {
     // Load the next event or null if there are no more events from the database, based on the current event
@@ -66,7 +66,7 @@ class _ExampleLazyPageViewImplementationState extends State<ExampleLazyPageViewI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: LazyPageView(
+      body: LazyPageView<Event>(
         controller: _lazyPageController,
         loadInitial: loadInitialEvent,
         loadNext: getNextDatabaseEvent,
@@ -77,7 +77,7 @@ class _ExampleLazyPageViewImplementationState extends State<ExampleLazyPageViewI
         placeHolder: const Center(child: CircularProgressIndicator()),
         onPageChanged: (Event event) {
           print('Page changed to: $event');
-        }
+        },
       ),
     );
   }
