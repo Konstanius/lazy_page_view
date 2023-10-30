@@ -201,104 +201,90 @@ class _LazyPageViewState<T> extends State<LazyPageView<T>> {
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      onPointerMove: (event) {
-        bool isHorizontal = widget.scrollDirection == Axis.horizontal;
-        double pos = isHorizontal ? event.position.dx : event.position.dy;
+    return PageView.builder(
+        allowImplicitScrolling: widget.allowImplicitScrolling ?? false,
+        clipBehavior: widget.clipBehavior ?? Clip.hardEdge,
+        dragStartBehavior: widget.dragStartBehavior ?? DragStartBehavior.start,
+        pageSnapping: widget.pageSnapping ?? true,
+        reverse: false,
+        scrollBehavior: widget.scrollBehavior,
+        scrollDirection: widget.scrollDirection ?? Axis.horizontal,
+        controller: pageController,
+        onPageChanged: (page) async {
+          if (page == controller.pageViewIndex) return;
+          if (page == controller.pageViewIndex + 1) {
+            controller.pageViewIndex = page;
+            if (!controller.nextPageData.isLoaded) return;
+            if (mounted) {
+              setState(() {
+                controller.leftEndReached = false;
 
-        if (pos > lastPos && controller.leftEndReached) {
-          pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 100), curve: Curves.ease);
-        }
-        if (pos < lastPos && controller.rightEndReached) {
-          pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 100), curve: Curves.ease);
-        }
-        lastPos = pos;
-      },
-      child: PageView.builder(
-          allowImplicitScrolling: widget.allowImplicitScrolling ?? false,
-          clipBehavior: widget.clipBehavior ?? Clip.hardEdge,
-          dragStartBehavior: widget.dragStartBehavior ?? DragStartBehavior.start,
-          pageSnapping: widget.pageSnapping ?? true,
-          reverse: false,
-          scrollBehavior: widget.scrollBehavior,
-          scrollDirection: widget.scrollDirection ?? Axis.horizontal,
-          controller: pageController,
-          onPageChanged: (page) async {
-            if (page == controller.pageViewIndex) return;
-            if (page == controller.pageViewIndex + 1) {
-              controller.pageViewIndex = page;
-              if (!controller.nextPageData.isLoaded) return;
-              if (mounted) {
-                setState(() {
-                  controller.leftEndReached = false;
+                if (!controller.rightEndReached) {
+                  controller.next(loadNext);
 
-                  if (!controller.rightEndReached) {
-                    controller.next(loadNext);
-
-                    if (widget.onPageChanged != null && controller.currentPageData.isLoaded) {
-                      widget.onPageChanged!(controller.currentPageData.get());
-                    }
-                  } else {
-                    controller.pageViewIndex = page - 1;
+                  if (widget.onPageChanged != null && controller.currentPageData.isLoaded) {
+                    widget.onPageChanged!(controller.currentPageData.get());
                   }
-                });
-              }
-            } else if (page == controller.pageViewIndex - 1) {
-              controller.pageViewIndex = page;
-              if (!controller.previousPageData.isLoaded) return;
-              if (mounted) {
-                setState(() {
-                  controller.rightEndReached = false;
-
-                  if (!controller.leftEndReached) {
-                    controller.previous(loadPrevious);
-
-                    if (widget.onPageChanged != null && controller.currentPageData.isLoaded) {
-                      widget.onPageChanged!(controller.currentPageData.get());
-                    }
-                  } else {
-                    controller.pageViewIndex = page + 1;
-                  }
-                });
-              }
-            }
-          },
-          itemBuilder: (context, index) {
-            return LayoutBuilder(builder: (context, constraints) {
-              if (widget.pageSnapping == false && constraints.minWidth < MediaQuery.of(context).size.width && constraints.minHeight < MediaQuery.of(context).size.height) {
-                throw Exception("If pageSnapping is disabled, the itemBuilder must return widgets larger than the viewport!");
-              }
-
-              if (controller.currentPageData.isLoading) return widget.placeholder;
-
-              if (controller.pageViewIndex == index - 1 && controller.nextPageData.isLoaded && !controller.rightEndReached) {
-                return widget.pageBuilder(context, controller.nextPageData.get());
-              }
-              if (controller.pageViewIndex == index && controller.currentPageData.isLoaded) {
-                return widget.pageBuilder(context, controller.currentPageData.get());
-              }
-              if (controller.pageViewIndex == index + 1 && controller.previousPageData.isLoaded && !controller.leftEndReached) {
-                return widget.pageBuilder(context, controller.previousPageData.get());
-              }
-
-              if (controller.pageViewIndex != index) {
-                if (controller.leftEndReached || controller.rightEndReached) {
-                  pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 100), curve: Curves.ease);
-                  return SizedBox(height: MediaQuery.of(context).size.height, width: MediaQuery.of(context).size.width);
-                }
-              }
-
-              WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-                if (controller.leftEndReached) {
-                  pageController.animateToPage(controller.pageViewIndex + 1, duration: const Duration(milliseconds: 200), curve: Curves.ease);
-                } else if (controller.rightEndReached) {
-                  pageController.animateToPage(controller.pageViewIndex - 1, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+                } else {
+                  controller.pageViewIndex = page - 1;
                 }
               });
+            }
+          } else if (page == controller.pageViewIndex - 1) {
+            controller.pageViewIndex = page;
+            if (!controller.previousPageData.isLoaded) return;
+            if (mounted) {
+              setState(() {
+                controller.rightEndReached = false;
 
-              return widget.placeholder;
+                if (!controller.leftEndReached) {
+                  controller.previous(loadPrevious);
+
+                  if (widget.onPageChanged != null && controller.currentPageData.isLoaded) {
+                    widget.onPageChanged!(controller.currentPageData.get());
+                  }
+                } else {
+                  controller.pageViewIndex = page + 1;
+                }
+              });
+            }
+          }
+        },
+        itemBuilder: (context, index) {
+          return LayoutBuilder(builder: (context, constraints) {
+            if (widget.pageSnapping == false && constraints.minWidth < MediaQuery.of(context).size.width && constraints.minHeight < MediaQuery.of(context).size.height) {
+              throw Exception("If pageSnapping is disabled, the itemBuilder must return widgets larger than the viewport!");
+            }
+
+            if (controller.currentPageData.isLoading) return widget.placeholder;
+
+            if (controller.pageViewIndex == index - 1 && controller.nextPageData.isLoaded && !controller.rightEndReached) {
+              return widget.pageBuilder(context, controller.nextPageData.get());
+            }
+            if (controller.pageViewIndex == index && controller.currentPageData.isLoaded) {
+              return widget.pageBuilder(context, controller.currentPageData.get());
+            }
+            if (controller.pageViewIndex == index + 1 && controller.previousPageData.isLoaded && !controller.leftEndReached) {
+              return widget.pageBuilder(context, controller.previousPageData.get());
+            }
+
+            if (controller.pageViewIndex != index) {
+              if (controller.leftEndReached || controller.rightEndReached) {
+                pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+                return SizedBox(height: MediaQuery.of(context).size.height, width: MediaQuery.of(context).size.width);
+              }
+            }
+
+            WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+              if (controller.leftEndReached) {
+                pageController.animateToPage(controller.pageViewIndex + 1, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+              } else if (controller.rightEndReached) {
+                pageController.animateToPage(controller.pageViewIndex - 1, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+              }
             });
-          }),
-    );
+
+            return widget.placeholder;
+          });
+        });
   }
 }
