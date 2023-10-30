@@ -29,6 +29,7 @@ class LazyPageView<T> extends StatefulWidget {
     this.allowImplicitScrolling,
     this.clipBehavior,
     this.dragStartBehavior,
+    this.physics,
     this.scrollBehavior,
     this.scrollDirection,
     this.pageSnapping,
@@ -91,6 +92,21 @@ class LazyPageView<T> extends StatefulWidget {
   /// {@macro flutter.widgets.scrollable.dragStartBehavior}
   final DragStartBehavior? dragStartBehavior;
 
+  /// How the page view should respond to user input.
+  ///
+  /// For example, determines how the page view continues to animate after the
+  /// user stops dragging the page view.
+  ///
+  /// The physics are modified to snap to page boundaries using
+  /// [PageScrollPhysics] prior to being used.
+  ///
+  /// If an explicit [ScrollBehavior] is provided to [scrollBehavior], the
+  /// [ScrollPhysics] provided by that behavior will take precedence after
+  /// [physics].
+  ///
+  /// Defaults to matching platform conventions.
+  final ScrollPhysics? physics;
+
   /// {@macro flutter.widgets.shadow.scrollBehavior}
   ///
   /// [ScrollBehavior]s also provide [ScrollPhysics]. If an explicit
@@ -125,7 +141,7 @@ class LazyPageView<T> extends StatefulWidget {
 
 class _LazyPageViewState<T> extends State<LazyPageView<T>> {
   PageController pageController = PageController(keepPage: false, initialPage: 10000);
-  double lastPos = 0;
+  double lastX = 0;
 
   late LazyPageController controller;
 
@@ -203,20 +219,22 @@ class _LazyPageViewState<T> extends State<LazyPageView<T>> {
   Widget build(BuildContext context) {
     return Listener(
       onPointerMove: (event) {
-        double pos = widget.scrollDirection == Axis.vertical ? event.position.dy : event.position.dx;
-        if (pos > lastPos && controller.leftEndReached) {
+        double x = event.position.dx;
+        if (x > lastX && controller.leftEndReached) {
           pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 100), curve: Curves.ease);
         }
-        if (pos < lastPos && controller.rightEndReached) {
+        if (x < lastX && controller.rightEndReached) {
           pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 100), curve: Curves.ease);
         }
-        lastPos = pos;
+
+        lastX = x;
       },
       child: PageView.builder(
           allowImplicitScrolling: widget.allowImplicitScrolling ?? false,
           clipBehavior: widget.clipBehavior ?? Clip.hardEdge,
           dragStartBehavior: widget.dragStartBehavior ?? DragStartBehavior.start,
           pageSnapping: widget.pageSnapping ?? true,
+          physics: widget.physics,
           reverse: false,
           scrollBehavior: widget.scrollBehavior,
           scrollDirection: widget.scrollDirection ?? Axis.horizontal,
