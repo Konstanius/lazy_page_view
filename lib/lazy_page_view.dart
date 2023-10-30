@@ -87,10 +87,8 @@ class _LazyPageViewState<T> extends State<LazyPageView<T>> {
 
   Future<T?> loadNext([bool initial = false]) async {
     T? a = controller.currentPageData.get();
-    print('from id next: ${(a as dynamic)?.id}');
     Future<T?> b = widget.loadNext(a as T);
     T? data = await b;
-    print('to id next: ${(data as dynamic)?.id}');
     if (data == null) {
       controller.rightEndReached = true;
       if (widget.onRightEndReached != null && controller.currentPageData.isLoaded) {
@@ -107,10 +105,8 @@ class _LazyPageViewState<T> extends State<LazyPageView<T>> {
 
   Future<T?> loadPrevious([bool initial = false]) async {
     T? a = controller.currentPageData.get();
-    print('from id previous: ${(a as dynamic)?.id}');
     Future<T?> b = widget.loadPrevious(a as T);
     T? data = await b;
-    print('to id previous: ${(data as dynamic)?.id}');
     if (data == null) {
       controller.leftEndReached = true;
       if (widget.onLeftEndReached != null && controller.currentPageData.isLoaded) {
