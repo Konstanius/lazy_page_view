@@ -142,13 +142,11 @@ class _LazyPageViewState<T> extends State<LazyPageView<T>> {
   }
 
   Future<T?> loadNext([bool initial = false]) async {
-    print('loadNext');
     T? a = controller.currentPageData.get();
     Future<T?> b = widget.loadNext(a as T);
     T? data = await b;
     if (data == null) {
       controller.rightEndReached = true;
-      print('rightEndReached');
       if (widget.onRightEndReached != null && controller.currentPageData.isLoaded) {
         widget.onRightEndReached!(controller.currentPageData.get());
       }
@@ -162,13 +160,11 @@ class _LazyPageViewState<T> extends State<LazyPageView<T>> {
   }
 
   Future<T?> loadPrevious([bool initial = false]) async {
-    print('loadPrevious');
     T? a = controller.currentPageData.get();
     Future<T?> b = widget.loadPrevious(a as T);
     T? data = await b;
     if (data == null) {
       controller.leftEndReached = true;
-      print('leftEndReached');
       if (widget.onLeftEndReached != null && controller.currentPageData.isLoaded) {
         widget.onLeftEndReached!(controller.currentPageData.get());
       }
