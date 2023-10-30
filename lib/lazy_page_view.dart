@@ -203,7 +203,9 @@ class _LazyPageViewState<T> extends State<LazyPageView<T>> {
   Widget build(BuildContext context) {
     return Listener(
       onPointerMove: (event) {
-        double pos = widget.scrollDirection == Axis.vertical ? event.position.dy : event.position.dx;
+        bool isHorizontal = widget.scrollDirection == Axis.horizontal;
+        double pos = isHorizontal ? event.position.dx : event.position.dy;
+
         if (pos > lastPos && controller.leftEndReached) {
           pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 100), curve: Curves.ease);
         }
@@ -281,7 +283,8 @@ class _LazyPageViewState<T> extends State<LazyPageView<T>> {
 
               if (controller.pageViewIndex != index) {
                 if (controller.leftEndReached || controller.rightEndReached) {
-                  return const SizedBox();
+                  pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 100), curve: Curves.ease);
+                  return SizedBox(height: MediaQuery.of(context).size.height, width: MediaQuery.of(context).size.width);
                 }
               }
 
