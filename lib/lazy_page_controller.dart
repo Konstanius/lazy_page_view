@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:lazy_page_view/completion.dart';
+import 'package:lazy_page_view/lazy_page_view.dart';
 
 class LazyPageController<T> extends ChangeNotifier {
   static const int initialPage = 10000;
@@ -12,6 +13,11 @@ class LazyPageController<T> extends ChangeNotifier {
   bool rightEndReached = false;
 
   int pageViewIndex = initialPage;
+
+  /// The current page index, relative to the initial page.
+  ///
+  /// For each call of [next] manually or by the [LazyPageView], the index is incremented by one.
+  /// For each call of [previous] manually or by the [LazyPageView], the index is decremented by one.
   int get currentPage {
     return pageViewIndex - initialPage;
   }

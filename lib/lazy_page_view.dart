@@ -1,5 +1,6 @@
 library lazy_page_view;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:lazy_page_view/lazy_page_controller.dart';
 
@@ -25,21 +26,114 @@ class LazyPageView<T> extends StatefulWidget {
     this.onLeftEndUnreached,
     this.onRightEndUnreached,
     this.controller,
+    this.allowImplicitScrolling,
+    this.clipBehavior,
+    this.dragStartBehavior,
+    this.physics,
+    this.scrollBehavior,
+    this.scrollDirection,
+    this.pageSnapping,
   });
 
+  /// A function that loads the initial pages data
   final Future<T?> Function() loadInitial;
+
+  /// A function that loads the previous pages data depending on the current page data
   final Future<T?> Function(T current) loadPrevious;
+
+  /// A function that loads the next pages data depending on the current page data
   final Future<T?> Function(T current) loadNext;
+
+  /// A builder that builds the page from the data
+  ///
+  /// ## NOTE: if [pageSnapping] is false, the itemBuilder must return widgets larger or equal to the viewport!
   final Widget Function(BuildContext context, T data) pageBuilder;
+
+  /// A widget to display while the page is loading
   final Widget placeholder;
 
+  /// An object that can be used to control how the [LazyPageView] functions
   final LazyPageController<T>? controller;
 
+  /// Called whenever the page in the center of the viewport changes.
   final void Function(T data)? onPageChanged;
+
+  /// Called whenever the loadPrevious function returns null.
   final void Function(T data)? onLeftEndReached;
+
+  /// Called whenever the loadNext function returns null.
   final void Function(T data)? onRightEndReached;
+
+  /// Called whenever the loadPrevious function returns a value after previously having returned null.
   final void Function(T data)? onLeftEndUnreached;
+
+  /// Called whenever the loadNext function returns a value after previously having returned null.
   final void Function(T data)? onRightEndUnreached;
+
+  /// Controls whether the widget's pages will respond to
+  /// [RenderObject.showOnScreen], which will allow for implicit accessibility
+  /// scrolling.
+  ///
+  /// With this flag set to false, when accessibility focus reaches the end of
+  /// the current page and the user attempts to move it to the next element, the
+  /// focus will traverse to the next widget outside of the page view.
+  ///
+  /// With this flag set to true, when accessibility focus reaches the end of
+  /// the current page and user attempts to move it to the next element, focus
+  /// will traverse to the next page in the page view.
+  /// {@macro flutter.material.Material.clipBehavior}
+  final bool? allowImplicitScrolling;
+
+  /// {@macro flutter.material.Material.clipBehavior}
+  ///
+  /// Defaults to [Clip.hardEdge].
+  final Clip? clipBehavior;
+
+  /// {@macro flutter.widgets.scrollable.dragStartBehavior}
+  final DragStartBehavior? dragStartBehavior;
+
+  /// How the page view should respond to user input.
+  ///
+  /// For example, determines how the page view continues to animate after the
+  /// user stops dragging the page view.
+  ///
+  /// The physics are modified to snap to page boundaries using
+  /// [PageScrollPhysics] prior to being used.
+  ///
+  /// If an explicit [ScrollBehavior] is provided to [scrollBehavior], the
+  /// [ScrollPhysics] provided by that behavior will take precedence after
+  /// [physics].
+  ///
+  /// Defaults to matching platform conventions.
+  final ScrollPhysics? physics;
+
+  /// {@macro flutter.widgets.shadow.scrollBehavior}
+  ///
+  /// [ScrollBehavior]s also provide [ScrollPhysics]. If an explicit
+  /// [ScrollPhysics] is provided in [physics], it will take precedence,
+  /// followed by [scrollBehavior], and then the inherited ancestor
+  /// [ScrollBehavior].
+  ///
+  /// The [ScrollBehavior] of the inherited [ScrollConfiguration] will be
+  /// modified by default to not apply a [Scrollbar].
+  final ScrollBehavior? scrollBehavior;
+
+  /// The [Axis] along which the scroll view's offset increases with each page.
+  ///
+  /// For the direction in which active scrolling may be occurring, see
+  /// [ScrollDirection].
+  ///
+  /// Defaults to [Axis.horizontal].
+  final Axis? scrollDirection;
+
+  /// # BETA feature - might not work as expected, use pages LARGER than the viewport for it to work properly
+  ///
+  /// Set to false to disable page snapping, useful for custom scroll behavior.
+  ///
+  /// If the [padEnds] is false and [PageController.viewportFraction] < 1.0,
+  /// the page will snap to the beginning of the viewport; otherwise, the page
+  /// will snap to the center of the viewport.
+  final bool? pageSnapping;
 
   @override
   State<LazyPageView<T>> createState() => _LazyPageViewState<T>();
@@ -136,6 +230,14 @@ class _LazyPageViewState<T> extends State<LazyPageView<T>> {
         lastX = x;
       },
       child: PageView.builder(
+          allowImplicitScrolling: widget.allowImplicitScrolling ?? false,
+          clipBehavior: widget.clipBehavior ?? Clip.hardEdge,
+          dragStartBehavior: widget.dragStartBehavior ?? DragStartBehavior.start,
+          pageSnapping: widget.pageSnapping ?? true,
+          physics: widget.physics,
+          reverse: false,
+          scrollBehavior: widget.scrollBehavior,
+          scrollDirection: widget.scrollDirection ?? Axis.horizontal,
           controller: pageController,
           onPageChanged: (page) async {
             if (page == controller.pageViewIndex) return;
@@ -178,33 +280,39 @@ class _LazyPageViewState<T> extends State<LazyPageView<T>> {
             }
           },
           itemBuilder: (context, index) {
-            if (controller.currentPageData.isLoading) return widget.placeholder;
-
-            if (controller.pageViewIndex == index - 1 && controller.nextPageData.isLoaded && !controller.rightEndReached) {
-              return widget.pageBuilder(context, controller.nextPageData.get());
-            }
-            if (controller.pageViewIndex == index && controller.currentPageData.isLoaded) {
-              return widget.pageBuilder(context, controller.currentPageData.get());
-            }
-            if (controller.pageViewIndex == index + 1 && controller.previousPageData.isLoaded && !controller.leftEndReached) {
-              return widget.pageBuilder(context, controller.previousPageData.get());
-            }
-
-            if (controller.pageViewIndex != index) {
-              if (controller.leftEndReached || controller.rightEndReached) {
-                return const SizedBox();
+            return LayoutBuilder(builder: (context, constraints) {
+              if (widget.pageSnapping == false && constraints.minWidth < MediaQuery.of(context).size.width && constraints.minHeight < MediaQuery.of(context).size.height) {
+                throw Exception("If pageSnapping is disabled, the itemBuilder must return widgets larger than the viewport!");
               }
-            }
 
-            WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-              if (controller.leftEndReached) {
-                pageController.animateToPage(controller.pageViewIndex + 1, duration: const Duration(milliseconds: 200), curve: Curves.ease);
-              } else if (controller.rightEndReached) {
-                pageController.animateToPage(controller.pageViewIndex - 1, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+              if (controller.currentPageData.isLoading) return widget.placeholder;
+
+              if (controller.pageViewIndex == index - 1 && controller.nextPageData.isLoaded && !controller.rightEndReached) {
+                return widget.pageBuilder(context, controller.nextPageData.get());
               }
+              if (controller.pageViewIndex == index && controller.currentPageData.isLoaded) {
+                return widget.pageBuilder(context, controller.currentPageData.get());
+              }
+              if (controller.pageViewIndex == index + 1 && controller.previousPageData.isLoaded && !controller.leftEndReached) {
+                return widget.pageBuilder(context, controller.previousPageData.get());
+              }
+
+              if (controller.pageViewIndex != index) {
+                if (controller.leftEndReached || controller.rightEndReached) {
+                  return const SizedBox();
+                }
+              }
+
+              WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                if (controller.leftEndReached) {
+                  pageController.animateToPage(controller.pageViewIndex + 1, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+                } else if (controller.rightEndReached) {
+                  pageController.animateToPage(controller.pageViewIndex - 1, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+                }
+              });
+
+              return widget.placeholder;
             });
-
-            return widget.placeholder;
           }),
     );
   }
