@@ -143,7 +143,8 @@ class _LazyPageViewState<T> extends State<LazyPageView<T>> {
 
   Future<T?> loadNext([bool initial = false]) async {
     T? a = controller.currentPageData.get();
-    Future<T?> b = widget.loadNext(a as T);
+    if (a == null) return null;
+    Future<T?> b = widget.loadNext(a);
     T? data = await b;
     if (data == null) {
       controller.rightEndReached = true;
@@ -161,7 +162,8 @@ class _LazyPageViewState<T> extends State<LazyPageView<T>> {
 
   Future<T?> loadPrevious([bool initial = false]) async {
     T? a = controller.currentPageData.get();
-    Future<T?> b = widget.loadPrevious(a as T);
+    if (a == null) return null;
+    Future<T?> b = widget.loadPrevious(a);
     T? data = await b;
     if (data == null) {
       controller.leftEndReached = true;
@@ -180,79 +182,90 @@ class _LazyPageViewState<T> extends State<LazyPageView<T>> {
   @override
   Widget build(BuildContext context) {
     return PageView.builder(
-        allowImplicitScrolling: widget.allowImplicitScrolling ?? false,
-        clipBehavior: widget.clipBehavior ?? Clip.hardEdge,
-        dragStartBehavior: widget.dragStartBehavior ?? DragStartBehavior.start,
-        reverse: false,
-        scrollDirection: widget.scrollDirection ?? Axis.horizontal,
-        controller: pageController,
-        onPageChanged: (page) async {
-          if (page == controller.pageViewIndex) return;
-          if (page == controller.pageViewIndex + 1) {
-            controller.pageViewIndex = page;
-            if (!controller.nextPageData.isLoaded) return;
-            if (mounted) {
-              setState(() {
-                controller.leftEndReached = false;
+      allowImplicitScrolling: widget.allowImplicitScrolling ?? false,
+      clipBehavior: widget.clipBehavior ?? Clip.hardEdge,
+      dragStartBehavior: widget.dragStartBehavior ?? DragStartBehavior.start,
+      reverse: false,
+      scrollDirection: widget.scrollDirection ?? Axis.horizontal,
+      controller: pageController,
+      onPageChanged: (page) async {
+        if (page == controller.pageViewIndex) return;
+        if (page == controller.pageViewIndex + 1) {
+          if (!controller.nextPageData.isLoaded) return;
+          controller.pageViewIndex = page;
+          if (mounted) {
+            setState(() {
+              controller.leftEndReached = false;
 
-                if (!controller.rightEndReached) {
-                  controller.next(loadNext);
+              if (!controller.rightEndReached) {
+                controller.next(loadNext);
 
-                  if (widget.onPageChanged != null && controller.currentPageData.isLoaded) {
-                    widget.onPageChanged!(controller.currentPageData.get());
-                  }
-                } else {
-                  controller.pageViewIndex = page - 1;
+                if (widget.onPageChanged != null && controller.currentPageData.isLoaded) {
+                  widget.onPageChanged!(controller.currentPageData.get());
                 }
-              });
-            }
-          } else if (page == controller.pageViewIndex - 1) {
-            controller.pageViewIndex = page;
-            if (!controller.previousPageData.isLoaded) return;
-            if (mounted) {
-              setState(() {
-                controller.rightEndReached = false;
+              } else {
+                controller.pageViewIndex = page - 1;
+              }
+            });
+          }
+        } else if (page == controller.pageViewIndex - 1) {
+          if (!controller.previousPageData.isLoaded) return;
+          controller.pageViewIndex = page;
+          if (mounted) {
+            setState(() {
+              controller.rightEndReached = false;
 
-                if (!controller.leftEndReached) {
-                  controller.previous(loadPrevious);
+              if (!controller.leftEndReached) {
+                controller.previous(loadPrevious);
 
-                  if (widget.onPageChanged != null && controller.currentPageData.isLoaded) {
-                    widget.onPageChanged!(controller.currentPageData.get());
-                  }
-                } else {
-                  controller.pageViewIndex = page + 1;
+                if (widget.onPageChanged != null && controller.currentPageData.isLoaded) {
+                  widget.onPageChanged!(controller.currentPageData.get());
                 }
-              });
-            }
+              } else {
+                controller.pageViewIndex = page + 1;
+              }
+            });
           }
-        },
-        itemBuilder: (context, index) {
-          if (controller.currentPageData.isLoading) return widget.placeholder;
+        }
+      },
+      itemBuilder: (context, index) {
+        if (controller.currentPageData.isLoading) return widget.placeholder;
 
-          if (controller.pageViewIndex == index - 1 && controller.nextPageData.isLoaded && !controller.rightEndReached) {
-            return widget.pageBuilder(context, controller.nextPageData.get());
+        if (controller.pageViewIndex == index - 1 && controller.nextPageData.isLoaded && !controller.rightEndReached) {
+          T? data = controller.nextPageData.get();
+          if (data != null) {
+            return widget.pageBuilder(context, data);
           }
-          if (controller.pageViewIndex == index && controller.currentPageData.isLoaded) {
-            return widget.pageBuilder(context, controller.currentPageData.get());
+        }
+        if (controller.pageViewIndex == index && controller.currentPageData.isLoaded) {
+          T? data = controller.currentPageData.get();
+          if (data != null) {
+            return widget.pageBuilder(context, data);
           }
-          if (controller.pageViewIndex == index + 1 && controller.previousPageData.isLoaded && !controller.leftEndReached) {
-            return widget.pageBuilder(context, controller.previousPageData.get());
+        }
+        if (controller.pageViewIndex == index + 1 && controller.previousPageData.isLoaded && !controller.leftEndReached) {
+          T? data = controller.previousPageData.get();
+          if (data != null) {
+            return widget.pageBuilder(context, data);
           }
+        }
 
-          if (controller.pageViewIndex != index) {
-            if (controller.leftEndReached || controller.rightEndReached) {
-              WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-                if (controller.leftEndReached) {
-                  pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 200), curve: Curves.ease);
-                } else if (controller.rightEndReached) {
-                  pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 200), curve: Curves.ease);
-                }
-              });
-              return const SizedBox();
-            }
+        if (controller.pageViewIndex != index) {
+          if (controller.leftEndReached || controller.rightEndReached) {
+            WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+              if (controller.leftEndReached || controller.rightEndReached) {
+                pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+              }
+            });
+            return const SizedBox();
           }
+        }
 
-          return widget.placeholder;
+        WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+          pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 200), curve: Curves.ease);
         });
+        return const SizedBox();
+      },
+    );
   }
 }
