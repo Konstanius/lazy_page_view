@@ -229,41 +229,46 @@ class _LazyPageViewState<T> extends State<LazyPageView<T>> {
         }
       },
       itemBuilder: (context, index) {
-        if (controller.currentPageData.isLoading) return widget.placeholder;
+        try {
+          if (controller.currentPageData.isLoading) return widget.placeholder;
 
-        if (controller.pageViewIndex == index - 1 && controller.nextPageData.isLoaded && !controller.rightEndReached) {
-          T? data = controller.nextPageData.get();
-          if (data != null) {
-            return widget.pageBuilder(context, data);
+          if (controller.pageViewIndex == index - 1 && controller.nextPageData.isLoaded && !controller.rightEndReached) {
+            T? data = controller.nextPageData.get();
+            if (data != null) {
+              return widget.pageBuilder(context, data);
+            }
           }
-        }
-        if (controller.pageViewIndex == index && controller.currentPageData.isLoaded) {
-          T? data = controller.currentPageData.get();
-          if (data != null) {
-            return widget.pageBuilder(context, data);
+          if (controller.pageViewIndex == index && controller.currentPageData.isLoaded) {
+            T? data = controller.currentPageData.get();
+            if (data != null) {
+              return widget.pageBuilder(context, data);
+            }
           }
-        }
-        if (controller.pageViewIndex == index + 1 && controller.previousPageData.isLoaded && !controller.leftEndReached) {
-          T? data = controller.previousPageData.get();
-          if (data != null) {
-            return widget.pageBuilder(context, data);
+          if (controller.pageViewIndex == index + 1 && controller.previousPageData.isLoaded && !controller.leftEndReached) {
+            T? data = controller.previousPageData.get();
+            if (data != null) {
+              return widget.pageBuilder(context, data);
+            }
           }
-        }
 
-        if (controller.pageViewIndex != index) {
-          if (controller.leftEndReached || controller.rightEndReached) {
-            WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-              if (controller.leftEndReached || controller.rightEndReached) {
-                pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 200), curve: Curves.ease);
-              }
-            });
-            return const SizedBox();
+          if (controller.pageViewIndex != index) {
+            if (controller.leftEndReached || controller.rightEndReached) {
+              WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                if (controller.leftEndReached || controller.rightEndReached) {
+                  pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+                }
+              });
+              return const SizedBox();
+            }
           }
-        }
 
-        WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-          pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 200), curve: Curves.ease);
-        });
+          WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+            pageController.animateToPage(controller.pageViewIndex, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+          });
+        } catch (e, s) {
+          print(e);
+          print(s);
+        }
         return const SizedBox();
       },
     );
